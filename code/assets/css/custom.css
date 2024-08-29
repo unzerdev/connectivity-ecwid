@@ -1,0 +1,45 @@
+div#appContent {
+    background: white !important;
+    margin: 0px auto;
+    padding: 20px;
+    max-width: 980px;
+}
+
+.alert-danger {
+    padding: 12px;
+    background-color: #f44336 !important;
+    color: white !important;
+    border-width: 0 !important;
+}
+
+.alert-success {
+    padding: 12px;
+    background-color: #04AA6D !important;
+    color: white !important;
+    border-width: 0 !important;
+}
+
+#payment-method-dashboard{
+    padding:40px !important;
+}
+
+#loader{
+    position: absolute;
+    height: 50px;
+    width: 50px;
+    margin-top: -45px;
+    margin-left: 130px;
+}
+
+.config-submit-button{
+    margin-top:20px;
+}
+
+.ecwid-messages{
+    position:relative;
+    margin-top:20px;
+}
+
+.ecwid-message-block{
+    position:absolute;
+}
