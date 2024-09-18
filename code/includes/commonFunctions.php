@@ -9,14 +9,15 @@
         $uAuthStatus = $_REQUEST['u_authorized_status'];
         $uCaptureStatus = $_REQUEST['u_captured_status'];
         $uChargedStatus = $_REQUEST['u_charged_status'];
+        $uAutoCaptureStatus = $_REQUEST['u_autocapture'];
 
         $qCheckRecordExists = mysqli_query($conn, "SELECT * FROM configurations WHERE e_storeId = '".$eStorId."'");
         $countNumOfStore = mysqli_num_rows($qCheckRecordExists);
         if($countNumOfStore <= 0){
-            $qForInsertStoreDetails = mysqli_query($conn, "INSERT INTO configurations(e_storeId, e_accessToken, u_publicKey, u_privateKey, u_authStatus, u_captureStatus, u_chargeStatus) VALUES ('".$eStorId."','".$eAccessToken."','".$uPublicKey."','".$uPrivateKey."','".$uAuthStatus."','".$uCaptureStatus."','".$uChargedStatus."')");
+            $qForInsertStoreDetails = mysqli_query($conn, "INSERT INTO configurations(e_storeId, e_accessToken, u_publicKey, u_privateKey, u_authStatus, u_captureStatus, u_chargeStatus, u_autocapture) VALUES ('".$eStorId."','".$eAccessToken."','".$uPublicKey."','".$uPrivateKey."','".$uAuthStatus."','".$uCaptureStatus."','".$uChargedStatus."','".$uAutoCaptureStatus."')");
         }else{
             $uDate = date("Y-m-d H:i:s");
-            $qForUpdateStoreDetails = mysqli_query($conn, "UPDATE configurations SET e_accessToken='".$eAccessToken."',u_publicKey='".$uPublicKey."',u_privateKey='".$uPrivateKey."',u_authStatus='".$uAuthStatus."',u_captureStatus='".$uCaptureStatus."',u_chargeStatus='".$uChargedStatus."',updatedAt='".$uDate."' WHERE  e_storeId='".$eStorId."'");
+            $qForUpdateStoreDetails = mysqli_query($conn, "UPDATE configurations SET e_accessToken='".$eAccessToken."',u_publicKey='".$uPublicKey."',u_privateKey='".$uPrivateKey."',u_authStatus='".$uAuthStatus."',u_captureStatus='".$uCaptureStatus."',u_chargeStatus='".$uChargedStatus."',u_autocapture='".$uAutoCaptureStatus."',updatedAt='".$uDate."' WHERE  e_storeId='".$eStorId."'");
         }
         echo 1;
     }

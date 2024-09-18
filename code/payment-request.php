@@ -29,10 +29,10 @@
 	$ecwid_payload = $_POST['data'];
 	$client_secret = "oizuHCVj9GJlz9CHdeZvVPrd77YIKl0O"; 
 	$result = getEcwidPayload($client_secret, $ecwid_payload);
-
+	
 	$payloadArray = array("response"=> $result, "date" => date("Y-m-d H:i:s"));
     $payloadArrayJson = json_encode($payloadArray);
-    file_put_contents('logs/ecwid_payload_response_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
+    file_put_contents('logs/ecwid_webhook/payload_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
 	
     if(isset($result) && !empty($result)){
         $orderTotalWithoutTax = 0;
@@ -51,13 +51,15 @@
         $orderRandNumber = $myStoreId."-".$orderId;
         $myTransId = $result['cart']['order']['referenceTransactionId'];
         $billingAddress = $result['cart']['order']['billingPerson'];
-        $shippingOptions = $result['cart']['order']['shippingOption'];
+        $ecwidSecretToken = $result['token'];
         $cancelUrl  = $result['returnUrl'];
         $successURL = "https://unzerecwid.mavenhostingservice.com/returnurl.php?order=$orderRandNumber";
        
         $qForStoreDetails = mysqli_query($conn,"SELECT * FROM configurations WHERE e_storeId='".$myStoreId."'");
         $rForCountStore=mysqli_num_rows($qForStoreDetails);
         $rForStoreDetails=mysqli_fetch_assoc($qForStoreDetails);
+        
+        $qForUpdateToken = mysqli_query($conn," UPDATE configurations SET e_accessToken='".$ecwidSecretToken."' WHERE e_storeId='".$myStoreId."'");
 
         if($rForCountStore > 0){
             $eStoreId = $rForStoreDetails['e_storeId'];
@@ -67,16 +69,21 @@
             $u_authStatus = $rForStoreDetails['u_authStatus'];
             $u_captureStatus = $rForStoreDetails['u_captureStatus'];
             $u_chargeStatus = $rForStoreDetails['u_chargeStatus'];
+            $u_autocapture = $rForStoreDetails['u_autocapture'];
             
             $unzer = new Unzer($u_privateKey);
             
             //SHIPMENT DETAILS
-            $shippingMethodName = ($shippingOptions['shippingMethodName']) ? $shippingOptions['shippingMethodName'] : 'N/A';
-            
             $shippingRate = 0;
-            if(isset($shippingOptions['shippingRate']) && !empty($shippingOptions['shippingRate'])){
-                $shippingRate = number_format($shippingOptions['shippingRate'], 2);
+            $shippingMethodName = "N/A";
+            if(isset($result['cart']['order']['shippingOption']) && !empty($result['cart']['order']['shippingOption'])){
+                $shippingOptions = $result['cart']['order']['shippingOption'];
+                $shippingMethodName = (isset($shippingOptions) && $shippingOptions['shippingMethodName']) ? $shippingOptions['shippingMethodName'] : 'N/A';
+                if(isset($shippingOptions)  && isset($shippingOptions['shippingRate']) && !empty($shippingOptions['shippingRate'])){
+                    $shippingRate = number_format($shippingOptions['shippingRate'], 2);
+                }
             }
+    
             $orderTotalWithoutTax =  $orderTotalWithoutTax + $shippingRate;
             $orderTotalWithoutTax = number_format($orderTotalWithoutTax,2);
            
@@ -168,9 +175,14 @@
                 ->setEffectiveInterestRate(0);
             
             try {
-                $response = $unzer->initPayPageAuthorize($paypage, $customer, $basket);
                 
-                $unzerLogArray = array("ecwid_store"=> $myStoreId, "ecwid_order_id"=> $orderId, "unzer_response" => $response, "date" => date("Y-m-d H:i:s"));
+                if($u_autocapture === "AUTHORIZE" || $u_autocapture == "AUTHORIZE"){
+                    $response = $unzer->initPayPageAuthorize($paypage, $customer, $basket);
+                }else{
+                    $response = $unzer->initPayPageCharge($paypage, $customer, $basket);
+                }
+               
+                $unzerLogArray = array("ecwid_store"=> $myStoreId, "ecwid_order_id"=> $orderId, "date" => date("Y-m-d H:i:s"));
                 $unzerLogArrayJson = json_encode($unzerLogArray);
                 file_put_contents('logs/unzer_response_'.date("Y-m-d").'.log', $unzerLogArrayJson, FILE_APPEND);
 
@@ -191,9 +203,9 @@
                             'customerId' => $response->getPayment()->getCustomer()->getId(),
                             'basketId' => $response->getPayment()->getBasket()->getId(),
                         ];
-                        $qForInsertOrder = mysqli_query($conn, "INSERT INTO orders (unzer_id, redirectUrl, amount, currency, returnUrl, shopName, shopDescription, tagline, action, paymentId, orderId, invoiceId, customerId, basketId) VALUES ('{$data['unzer_id']}', '{$data['redirectUrl']}', '{$data['amount']}', '{$data['currency']}', '{$data['returnUrl']}', '{$data['shopName']}', '{$data['shopDescription']}', '{$data['tagline']}', '{$data['action']}', '{$data['paymentId']}', '{$orderId}', '{$data['invoiceId']}', '{$data['customerId']}', '{$data['basketId']}')
+                        $qForInsertOrder = mysqli_query($conn, "INSERT INTO orders (unzer_id, redirectUrl, amount, currency, returnUrl, shopName, shopDescription, tagline, action, paymentId, orderId, invoiceId, customerId, basketId, failureURL) VALUES ('{$data['unzer_id']}', '{$data['redirectUrl']}', '{$data['amount']}', '{$data['currency']}', '{$data['returnUrl']}', '{$data['shopName']}', '{$data['shopDescription']}', '{$data['tagline']}', '{$data['action']}', '{$data['paymentId']}', '{$orderId}', '{$data['invoiceId']}', '{$data['customerId']}', '{$data['basketId']}', '{$cancelUrl}')
                         ON DUPLICATE KEY UPDATE unzer_id = VALUES(unzer_id),redirectUrl = VALUES(redirectUrl),amount = VALUES(amount),currency = VALUES(currency),returnUrl = VALUES(returnUrl),shopName = VALUES(shopName),shopDescription = VALUES(shopDescription),tagline = VALUES(tagline),action = VALUES(action),
-                        paymentId = VALUES(paymentId),invoiceId = VALUES(invoiceId),customerId = VALUES(customerId),basketId = VALUES(basketId),updated_at = CURRENT_TIMESTAMP");
+                        paymentId = VALUES(paymentId),invoiceId = VALUES(invoiceId),customerId = VALUES(customerId),basketId = VALUES(basketId),failureURL = VALUES(failureURL),updated_at = CURRENT_TIMESTAMP");
                         
                         header("Location: " . $response->getRedirectUrl());
                         header('Content-Type: application/json');

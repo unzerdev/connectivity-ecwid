@@ -1,4 +1,9 @@
 <?php 
+    
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
 	$host = 'localhost';
 	$username = 'mavenhostingserv_nirvir';
 	$password = '9M@st#;2qy,4';
