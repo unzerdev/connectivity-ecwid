@@ -27,6 +27,7 @@ $dPrivateKey = "";
 $dAuthStatus = "";
 $dCaptureStatus = "";
 $dChargedStatus = "";
+$dAutoCaptureStatus = "";
 
 if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
     $eStorId = $ecwidResponse['store_id'];
@@ -69,6 +70,9 @@ if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
 		}
     }
 }
+
+$qForGetWebhooks = mysqli_query($conn, "SELECT *  FROM webhook_urls WHERE store_id = '".$eStorId."'");
+$countWebhook = mysqli_num_rows($qForGetWebhooks);
 
 ?>
 <!DOCTYPE html>
@@ -238,16 +242,29 @@ if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
 																</div>
 															</div>
 														</div>
+														
+														
+														
+														
 														<input type="hidden" name="action" id="action" value="register">
 														<input type="hidden" name="storeId" id="storeId" value="<?php echo $ecwidStoreId; ?>">
+														<input type="hidden" name="webhookUrl" id="webhookUrl" value="https://mavenhostingservice.com/unzerecwid/unzer_webhook_handler.php">
 														<input type="hidden" name="storeAccessToken" id="storeAccessToken" value="<?php echo $ecwidToken; ?>">
 														<button type="submit" class="btn btn-default btn-medium config-submit-button">Submit</button> <img src="<?php echo UNZER_ASSETS_URL; ?>/images/loader.gif" id="loader" class="loader" alt="loader"/>
-
+                                                        
+                                                        <?php if((isset($dPublicKey) && !empty($dPublicKey)) && (isset($dPrivateKey) && !empty($dPrivateKey)) && $countWebhook === 0){ ?>
+                                                            <button class="btn btn-medium btn-link config-webhook-button" type="button" id="add-webhook-button">Add Webhook</button>
+                                                        <?php } ?>
 														<div class="ecwid-g-r ecwid-messages">
 															<div class="ecwid-u-1 ecwid-message-block">
 																<div class="success_message">
 																	<div class="alert alert-success">
 																			<strong>Record updated successfully...!!</strong>
+																	</div>
+																</div>
+																<div class="delete_message">
+																	<div class="alert alert-danger">
+																			<strong>Record deleted successfully...!!</strong>
 																	</div>
 																</div>
 																<div class="failed_message">
@@ -275,6 +292,32 @@ if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
 										<!-- Payment instructions block END -->
 
 									</div>
+									
+									<!-- Webhook Listing -->
+									<?php if((isset($dPublicKey) && !empty($dPublicKey)) && (isset($dPrivateKey) && !empty($dPrivateKey)) && $countWebhook > 0){ ?>
+									<div class="a-card a-card--compact" style="margin-top:40px;">
+                                       <div class="a-card__paddings">
+                                          <h4>Configured Webhook</h4>
+                                          <?php while($webhook = mysqli_fetch_assoc($qForGetWebhooks)){ ?>
+                                          <div class="list-element list-element--has-hover list-element--compact list-element--inline-mode">
+                                             <div class="list-element__content">
+                                                <div class="list-element__info">
+                                                   <div class="list-element__data-row"><span class="text-default"><b><span class="gwt-InlineLabel"><?php echo $webhook['unzer_webhook_url']  ?></span></b></span></div>
+                                                </div>
+                                                <div class="list-element__actions">
+                                                   <div class="list-element__buttons-set">
+                                                      <div class="list-element__button-wrapper">
+                                                         <button type="button" class="btn btn-default btn-small delete-webhook" id="delete-webhook" data-value="<?php echo $webhook['id'] ?>">Delete</button>
+                                                      </div>
+                                                   </div>
+                                                </div>
+                                             </div>
+                                          </div>
+                                          <?php } ?>
+                                       </div>
+                                    </div>
+                                    <?php } ?>
+                                    
 								</div>
 							</div>
 						</div>

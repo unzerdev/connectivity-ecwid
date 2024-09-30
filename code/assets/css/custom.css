@@ -28,10 +28,14 @@ div#appContent {
     height: 50px;
     width: 50px;
     margin-top: -45px;
-    margin-left: 130px;
+    margin-left: 250px;
 }
 
 .config-submit-button{
+    margin-top:20px;
+}
+
+.config-webhook-button{
     margin-top:20px;
 }
 

@@ -39,13 +39,4 @@
 <IfModule mime_module>
   AddHandler application/x-httpd-ea-php81 .php .php8 .phtml
 </IfModule>
-
-# BEGIN CORS Configuration
-<IfModule mod_headers.c>
-   Header set Access-Control-Allow-Origin "*"
-   Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-   Header set Access-Control-Allow-Headers "Content-Type, Authorization"
-</IfModule>
-# END CORS Configuration
-
 # php -- END cPanel-generated handler, do not edit

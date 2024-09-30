@@ -32,11 +32,14 @@
 	
 	$payloadArray = array("response"=> $result, "date" => date("Y-m-d H:i:s"));
     $payloadArrayJson = json_encode($payloadArray);
-    file_put_contents('logs/ecwid_webhook/payload_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
+    file_put_contents('logs/ecwid_webhook/payment_request_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
 	
     if(isset($result) && !empty($result)){
         $orderTotalWithoutTax = 0;
         $myStoreId = $result['storeId'];
+        $storeLang = $result['lang'];
+        $storeLangInUpper = strtoupper($storeLang);
+        $langugage = $storeLang."-".$storeLangInUpper;
         $storeName = "Store-".$myStoreId;
         $myReturnUrl = $result['returnUrl'];
         $orderId = $result['cart']['order']['orderNumber'];
@@ -54,6 +57,9 @@
         $ecwidSecretToken = $result['token'];
         $cancelUrl  = $result['returnUrl'];
         $successURL = "https://unzerecwid.mavenhostingservice.com/returnurl.php?order=$orderRandNumber";
+        $orderTotal = str_replace(",", "",$orderTotal);
+        $orderTotalWithoutTax = str_replace(",", "",$orderTotalWithoutTax);
+        $orderTotalTax = str_replace(",", "",$orderTotalTax);
        
         $qForStoreDetails = mysqli_query($conn,"SELECT * FROM configurations WHERE e_storeId='".$myStoreId."'");
         $rForCountStore=mysqli_num_rows($qForStoreDetails);
@@ -173,7 +179,9 @@
                 ->setInvoiceId($orderId)
                 ->setExemptionType(\UnzerSDK\Constants\ExemptionType::LOW_VALUE_PAYMENT)
                 ->setEffectiveInterestRate(0);
-            
+                
+            $paypage->setAdditionalAttribute('disabledcof', true); 
+        
             try {
                 
                 if($u_autocapture === "AUTHORIZE" || $u_autocapture == "AUTHORIZE"){
@@ -207,7 +215,8 @@
                         ON DUPLICATE KEY UPDATE unzer_id = VALUES(unzer_id),redirectUrl = VALUES(redirectUrl),amount = VALUES(amount),currency = VALUES(currency),returnUrl = VALUES(returnUrl),shopName = VALUES(shopName),shopDescription = VALUES(shopDescription),tagline = VALUES(tagline),action = VALUES(action),
                         paymentId = VALUES(paymentId),invoiceId = VALUES(invoiceId),customerId = VALUES(customerId),basketId = VALUES(basketId),failureURL = VALUES(failureURL),updated_at = CURRENT_TIMESTAMP");
                         
-                        header("Location: " . $response->getRedirectUrl());
+                        $returnURL = $response->getRedirectUrl()."?locale=$storeLang";
+                        header("Location: " . $returnURL);
                         header('Content-Type: application/json');
                         exit;
                 }

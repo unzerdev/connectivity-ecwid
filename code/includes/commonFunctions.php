@@ -21,4 +21,35 @@
         }
         echo 1;
     }
+    
+    
+    if(isset($_REQUEST) && !empty($_REQUEST) && $_REQUEST['action'] === "get_webhooks"){
+        $eStorId = $_REQUEST['storeId'];
+        $qForGetWebhooks = mysqli_query($conn, "SELECT * FROM webhook_urls WHERE store_id = '".$eStorId."'");
+        $countNumOfStore = mysqli_num_rows($qForGetWebhooks);
+        if($countNumOfStore > 0){
+            $rForGetWebhooks = mysqli_fetch_all($rForGetWebhooks);
+            echo json_encode($rForGetWebhooks);
+        }else{
+            echo json_encode(['error' => 'No records found.']);
+        }
+        
+    }
+
+    if(isset($_REQUEST) && !empty($_REQUEST) && $_REQUEST['action'] === "webhook_add"){
+        $eStorId = $_REQUEST['storeId'];
+        $eWebhookURL = $_REQUEST['webhookURL'];
+        $qCheckRecordExists = mysqli_query($conn, "SELECT * FROM webhook_urls WHERE store_id = '".$eStorId."' AND unzer_webhook_url = '".$eWebhookURL."'");
+        $countNumOfStore = mysqli_num_rows($qCheckRecordExists);
+        if($countNumOfStore == 0){
+            $qForInsertWebhook = mysqli_query($conn, "INSERT INTO webhook_urls(store_id, unzer_webhook_url) VALUES ('".$eStorId."','".$eWebhookURL."')");
+        }
+        echo 1;
+    }
+    
+    if(isset($_REQUEST) && !empty($_REQUEST) && $_REQUEST['action'] === "webhook_delete"){
+        $rowId = $_REQUEST['id'];
+        $qForInsertWebhook = mysqli_query($conn, "DELETE FROM webhook_urls WHERE id = '".$rowId."'");
+        echo 1;
+    }
 ?>

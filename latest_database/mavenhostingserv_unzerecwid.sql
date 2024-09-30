@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 17, 2024 at 09:32 AM
+-- Generation Time: Sep 30, 2024 at 08:04 AM
 -- Server version: 10.4.24-MariaDB
 -- PHP Version: 8.1.6
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `unzer_ecwid_live`
+-- Database: `mavenhostingserv_unzerecwid`
 --
 
 -- --------------------------------------------------------
@@ -45,6 +45,23 @@ CREATE TABLE `configurations` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `ecwid_webhook`
+--
+
+CREATE TABLE `ecwid_webhook` (
+  `id` int(11) NOT NULL,
+  `ecwid_store_id` varchar(255) DEFAULT NULL,
+  `ecwid_order_id` varchar(255) DEFAULT NULL,
+  `unzer_action` text DEFAULT NULL,
+  `unzer_payment_id` text DEFAULT NULL,
+  `ecwid_payment_status` text DEFAULT NULL,
+  `unzer_api_execute_id` text DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `orders`
 --
 
@@ -61,6 +78,7 @@ CREATE TABLE `orders` (
   `tagline` varchar(255) DEFAULT NULL,
   `action` varchar(50) DEFAULT NULL,
   `paymentId` varchar(255) DEFAULT NULL,
+  `chargedId` text DEFAULT NULL,
   `orderId` varchar(255) DEFAULT NULL,
   `invoiceId` varchar(255) DEFAULT NULL,
   `customerId` varchar(255) DEFAULT NULL,
@@ -90,6 +108,19 @@ CREATE TABLE `unzer_webhook` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `webhook_urls`
+--
+
+CREATE TABLE `webhook_urls` (
+  `id` int(11) NOT NULL,
+  `store_id` varchar(255) NOT NULL,
+  `unzer_webhook_url` text NOT NULL,
+  `createdAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
 --
 -- Indexes for dumped tables
 --
@@ -98,6 +129,12 @@ CREATE TABLE `unzer_webhook` (
 -- Indexes for table `configurations`
 --
 ALTER TABLE `configurations`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `ecwid_webhook`
+--
+ALTER TABLE `ecwid_webhook`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -114,6 +151,12 @@ ALTER TABLE `unzer_webhook`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `webhook_urls`
+--
+ALTER TABLE `webhook_urls`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -121,6 +164,12 @@ ALTER TABLE `unzer_webhook`
 -- AUTO_INCREMENT for table `configurations`
 --
 ALTER TABLE `configurations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `ecwid_webhook`
+--
+ALTER TABLE `ecwid_webhook`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -133,6 +182,12 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `unzer_webhook`
 --
 ALTER TABLE `unzer_webhook`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `webhook_urls`
+--
+ALTER TABLE `webhook_urls`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
