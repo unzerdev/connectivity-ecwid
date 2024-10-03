@@ -11,6 +11,7 @@
     $wbEventType = $wehookResponseJsonData->eventType; 
     $wbEventId = $wehookResponseJsonData->eventId;
     $wbPaymentStatus = $wehookResponseJsonData->data->newPaymentStatus;
+    $wbOldPaymentStatus = $wehookResponseJsonData->data->oldPaymentStatus;
     
     function updateOrder($eStoreId, $eOrderId, $eToken, $eAPIMethod, $eParameters){
 			$eParameters = json_encode($eParameters);
@@ -69,6 +70,9 @@
                     $getEcwidOrderDetails = getOrderDetailsEcwid($wbStoreId, $wbOrderId, $ecSecretToken);
                     $ecwidInternalOrderId = $getEcwidOrderDetails->internalId;
                     $ecwidPaymentStatus = $getEcwidOrderDetails->paymentStatus;
+                    $ecwidOrderTotal = $getEcwidOrderDetails->total;
+                    
+                    $qForUpdateOrderAmount = mysqli_query($conn, 'UPDATE orders SET amountUpdated = "'.$ecwidOrderTotal.'" WHERE shopName = "'.$wbStoreId.'" AND orderId = "'.$ecwidInternalOrderId.'"');
                     
                     if($ecwidInternalOrderId != ""){
                         $qForGetOrderDetails = mysqli_query($conn,'select orderId,paymentId,shopName,action,paymentMethodName,shopName,amount,currency,returnUrl from orders where shopName="'.$wbStoreId.'" AND orderId="'.$ecwidInternalOrderId.'"');
@@ -108,16 +112,34 @@
                                         }
                                 }
                                 
-                                if($wbPaymentStatus == "CANCELLED" && $unzerAction == "authorize"){
-                                    $payment = $unzer->fetchAuthorization($unzerPaymentId);
-                                    $cancellation = $payment->cancel();
-                                    $qForGetOrderDetails = mysqli_query($conn,"INSERT INTO ecwid_webhook (ecwid_store_id, ecwid_order_id, unzer_action, unzer_payment_id, ecwid_payment_status, unzer_api_execute_id) VALUES ('".$wbStoreId."', '".$wbOrderId."', '".$unzerAction."', '".$unzerPaymentId."', '".$wbPaymentStatus."', '".$cancellation->getId()."') ON DUPLICATE KEY UPDATE   ecwid_store_id = '".$wbStoreId."', ecwid_order_id = '".$wbOrderId."', unzer_action = '".$unzerAction."',  unzer_payment_id = '".$unzerPaymentId."', ecwid_payment_status = '".$wbPaymentStatus."', unzer_api_execute_id = '".$cancellation->getId()."'");
-                                    $paidStatus = array("CANCELLED_UNZER_RESPONSE" => $executeCharged, "charge_id"=>$cancellation->getId(), "action"=>$cancellation, "date"=>$crDate);
-                                    $paidStatusJson = json_encode($paidStatus);
-                                    file_put_contents('logs/ecwid_webhook/CANCELLED_AUTHORIZED_STATUS_'.date("Y-m-d").'.log', $paidStatusJson, FILE_APPEND);
+                                if(($wbPaymentStatus == "CANCELLED" || $wbPaymentStatus == "REFUNDED") && $unzerAction == "authorize"){
+                                    
+                                    $getUnzerPaymentById = $unzer->fetchPayment($unzerPaymentId);
+                                    $authorization = $getUnzerPaymentById->getAuthorization();
+                                    $charges = $getUnzerPaymentById->getCharges();
+                                    if (!empty($authorization) && empty($charges)) {
+                                        $payment = $unzer->fetchAuthorization($unzerPaymentId);
+                                        $cancellation = $payment->cancel();
+                                        $qForGetOrderDetails = mysqli_query($conn,"INSERT INTO ecwid_webhook (ecwid_store_id, ecwid_order_id, unzer_action, unzer_payment_id, ecwid_payment_status, unzer_api_execute_id) VALUES ('".$wbStoreId."', '".$wbOrderId."', '".$unzerAction."', '".$unzerPaymentId."', '".$wbPaymentStatus."', '".$cancellation->getId()."') ON DUPLICATE KEY UPDATE   ecwid_store_id = '".$wbStoreId."', ecwid_order_id = '".$wbOrderId."', unzer_action = '".$unzerAction."',  unzer_payment_id = '".$unzerPaymentId."', ecwid_payment_status = '".$wbPaymentStatus."', unzer_api_execute_id = '".$cancellation->getId()."'");
+                                        $paidStatus = array("CANCELLED_UNZER_RESPONSE" => $executeCharged, "charge_id"=>$cancellation->getId(), "action"=>$cancellation, "date"=>$crDate);
+                                        $paidStatusJson = json_encode($paidStatus);
+                                        file_put_contents('logs/ecwid_webhook/CANCELLED_AUTHORIZED_STATUS_'.date("Y-m-d").'.log', $paidStatusJson, FILE_APPEND);
+                                    }
+                                    
+                                    if (!empty($charges)) {
+                                        $getUnzerPayment = $unzer->fetchPayment($unzerPaymentId);
+                                        if(($getUnzerPayment->getCharges()[0]->getId()) && !empty($getUnzerPayment->getCharges()[0]->getId())){
+                                            $chargeId = $getUnzerPayment->getCharges()[0]->getId();
+                                            $chargePaymentExecute = $unzer->fetchChargeById($unzerPaymentId, $chargeId);
+                                            $cancelChargePayment = $chargePaymentExecute->cancel();
+                                            $qForGetOrderDetails = mysqli_query($conn,"INSERT INTO ecwid_webhook (ecwid_store_id, ecwid_order_id, unzer_action, unzer_payment_id, ecwid_payment_status, unzer_api_execute_id) VALUES ('".$wbStoreId."', '".$wbOrderId."', '".$unzerAction."', '".$unzerPaymentId."', '".$wbPaymentStatus."', '".$cancelChargePayment->getId()."') ON DUPLICATE KEY UPDATE   ecwid_store_id = '".$wbStoreId."', ecwid_order_id = '".$wbOrderId."', unzer_action = '".$unzerAction."',  unzer_payment_id = '".$unzerPaymentId."', ecwid_payment_status = '".$wbPaymentStatus."', unzer_api_execute_id = '".$cancelChargePayment->getId()."'");
+                                            $paidStatus = array("CANCELLED_UNZER_RESPONSE" => $cancelChargePayment, "charge_id"=>$cancelChargePayment->getId(), "action"=>$unzerAction, "date"=>$crDate);
+                                            $paidStatusJson = json_encode($paidStatus);
+                                            file_put_contents('logs/ecwid_webhook/CANCELLED_AUTHORIZED_CHARGED_STATUS_'.date("Y-m-d").'.log', $paidStatusJson, FILE_APPEND);
+                                        }
+                                    }
                                 }
                               
-                                
                                 if(($wbPaymentStatus == "CANCELLED" || $wbPaymentStatus == "REFUNDED") && $unzerAction == "charge"){
                                     $getUnzerPayment = $unzer->fetchPayment($unzerPaymentId);
                                     if(($getUnzerPayment->getCharges()[0]->getId()) && !empty($getUnzerPayment->getCharges()[0]->getId())){

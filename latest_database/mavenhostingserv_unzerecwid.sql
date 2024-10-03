@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 30, 2024 at 08:04 AM
+-- Generation Time: Oct 03, 2024 at 08:34 AM
 -- Server version: 10.4.24-MariaDB
 -- PHP Version: 8.1.6
 
@@ -71,6 +71,7 @@ CREATE TABLE `orders` (
   `paymentMethodName` text DEFAULT NULL,
   `redirectUrl` text DEFAULT NULL,
   `amount` decimal(10,2) DEFAULT NULL,
+  `amountUpdated` decimal(10,0) DEFAULT 0,
   `currency` varchar(10) DEFAULT NULL,
   `returnUrl` text DEFAULT NULL,
   `shopName` text DEFAULT NULL,

@@ -87,6 +87,7 @@
                 $shippingMethodName = (isset($shippingOptions) && $shippingOptions['shippingMethodName']) ? $shippingOptions['shippingMethodName'] : 'N/A';
                 if(isset($shippingOptions)  && isset($shippingOptions['shippingRate']) && !empty($shippingOptions['shippingRate'])){
                     $shippingRate = number_format($shippingOptions['shippingRate'], 2);
+                    $shippingRate = str_replace(',', '', $shippingRate);
                 }
             }
     
@@ -130,6 +131,7 @@
                 $basketRefId = "Item-$basketProductId";
                 $basketQty = $items['quantity'];
                 $basketUnitGross = number_format($items['priceWithoutTax'], 2);
+                $basketUnitGross = str_replace(',', '', $basketUnitGross);
                 $basketDiscountPerUnitGross = 0;
                 $basketSetVat = number_format($items['tax'], 2);
                 $basketSetTitle = $items['name'];

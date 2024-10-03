@@ -77,23 +77,23 @@ if(isset($webhookData) && !empty($webhookData)){
                 }
                 
                 if($webhookEvent === "authorize.succeeded" || $webhookEvent == "authorize.succeeded"){
-                     $uPaymentStatus = "PAID";
-                     $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='authorize.succeeded' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
-                    $ecwidOrderStatusArray = array('paymentStatus'=>"PAID");
+                    $uPaymentStatus = $uAuthorizeStatus;
+                    $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='authorize.succeeded' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
+                    $ecwidOrderStatusArray = array('paymentStatus'=>$uAuthorizeStatus);
                     updateOrder($ecwidStoreId, $ecwidOrderId, $ecwidStoreToken, 'PUT', $ecwidOrderStatusArray);
                 }
                 
                 if($webhookEvent === "authorize.failed" || $webhookEvent == "authorize.failed"){
-                    $uPaymentStatus = "AWAITING_PAYMENT";
+                    $uPaymentStatus = "CANCELLED";
                     $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='authorize.failed' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
-                    $ecwidOrderStatusArray = array('paymentStatus'=>'AWAITING_PAYMENT');
+                    $ecwidOrderStatusArray = array('paymentStatus'=>'CANCELLED');
                     updateOrder($ecwidStoreId, $ecwidOrderId, $ecwidStoreToken, 'PUT', $ecwidOrderStatusArray);
                 }
                 
                 if($webhookEvent === "authorize.pending" || $webhookEvent == "authorize.pending"){
-                    $uPaymentStatus = "AWAITING_PAYMENT";
+                     $uPaymentStatus = $uAuthorizeStatus;
                     $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='authorize.pending' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
-                    $ecwidOrderStatusArray = array('paymentStatus'=>'AWAITING_PAYMENT');
+                    $ecwidOrderStatusArray = array('paymentStatus'=> $uPaymentStatus);
                     updateOrder($ecwidStoreId, $ecwidOrderId, $ecwidStoreToken, 'PUT', $ecwidOrderStatusArray);
                 }
                 
@@ -113,23 +113,23 @@ if(isset($webhookData) && !empty($webhookData)){
                 }
                 
                 if($webhookEvent === "charge.succeeded" || $webhookEvent == "charge.succeeded"){
-                    $uPaymentStatus = "PAID";
+                    $uPaymentStatus = $uChargeStatus;
                     $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='charge.succeeded' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
-                    $ecwidOrderStatusArray = array('paymentStatus'=>"PAID");
+                    $ecwidOrderStatusArray = array('paymentStatus'=> $uChargeStatus);
                     updateOrder($ecwidStoreId, $ecwidOrderId, $ecwidStoreToken, 'PUT', $ecwidOrderStatusArray);
                 }
                 
                 if($webhookEvent === "charge.failed" || $webhookEvent == "charge.failed"){
-                    $uPaymentStatus = "AWAITING_PAYMENT";
+                    $uPaymentStatus = "CANCELLED";
                     $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='charge.failed' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
-                    $ecwidOrderStatusArray = array('paymentStatus'=>"AWAITING_PAYMENT");
+                    $ecwidOrderStatusArray = array('paymentStatus'=>"CANCELLED");
                     updateOrder($ecwidStoreId, $ecwidOrderId, $ecwidStoreToken, 'PUT', $ecwidOrderStatusArray);
                 }
                 
                 if($webhookEvent === "charge.pending" || $webhookEvent == "charge.pending"){
-                    $uPaymentStatus = "AWAITING_PAYMENT";
+                    $uPaymentStatus = $uChargeStatus;
                     $qForUpdateWebhookStatus = mysqli_query($conn, "UPDATE unzer_webhook SET unzer_payment_status='".$uPaymentStatus."',updated_at='".$cDate."',unzer_event='charge.pending' WHERE unzer_public_key='".$webhookPublicKey."' AND unzer_payment_id= '".$webhookPaymentId."'");
-                    $ecwidOrderStatusArray = array('paymentStatus'=>"AWAITING_PAYMENT");
+                    $ecwidOrderStatusArray = array('paymentStatus'=> $uChargeStatus);
                     updateOrder($ecwidStoreId, $ecwidOrderId, $ecwidStoreToken, 'PUT', $ecwidOrderStatusArray);
                 }
                 
