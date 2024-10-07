@@ -60,7 +60,7 @@
         $orderTotal = str_replace(",", "",$orderTotal);
         $orderTotalWithoutTax = str_replace(",", "",$orderTotalWithoutTax);
         $orderTotalTax = str_replace(",", "",$orderTotalTax);
-       
+        
         $qForStoreDetails = mysqli_query($conn,"SELECT * FROM configurations WHERE e_storeId='".$myStoreId."'");
         $rForCountStore=mysqli_num_rows($qForStoreDetails);
         $rForStoreDetails=mysqli_fetch_assoc($qForStoreDetails);
@@ -70,6 +70,7 @@
         if($rForCountStore > 0){
             $eStoreId = $rForStoreDetails['e_storeId'];
             $eStoreToken = $rForStoreDetails['e_accessToken'];
+            $eStoreName = $rForStoreDetails['e_storeName'];
             $u_publicKey = $rForStoreDetails['u_publicKey'];
             $u_privateKey = $rForStoreDetails['u_privateKey'];
             $u_authStatus = $rForStoreDetails['u_authStatus'];
@@ -177,12 +178,12 @@
 
             $paypage->setLogoImage('')
                 ->setOrderId($orderId)
-                ->setShopName($myStoreId)
+                ->setShopName($eStoreName)
                 ->setInvoiceId($orderId)
                 ->setExemptionType(\UnzerSDK\Constants\ExemptionType::LOW_VALUE_PAYMENT)
                 ->setEffectiveInterestRate(0);
                 
-            $paypage->setAdditionalAttribute('disabledcof', true); 
+            $paypage->setAdditionalAttribute('disabledCOF', 'card'); 
         
             try {
                 
@@ -213,8 +214,8 @@
                             'customerId' => $response->getPayment()->getCustomer()->getId(),
                             'basketId' => $response->getPayment()->getBasket()->getId(),
                         ];
-                        $qForInsertOrder = mysqli_query($conn, "INSERT INTO orders (unzer_id, redirectUrl, amount, currency, returnUrl, shopName, shopDescription, tagline, action, paymentId, orderId, invoiceId, customerId, basketId, failureURL) VALUES ('{$data['unzer_id']}', '{$data['redirectUrl']}', '{$data['amount']}', '{$data['currency']}', '{$data['returnUrl']}', '{$data['shopName']}', '{$data['shopDescription']}', '{$data['tagline']}', '{$data['action']}', '{$data['paymentId']}', '{$orderId}', '{$data['invoiceId']}', '{$data['customerId']}', '{$data['basketId']}', '{$cancelUrl}')
-                        ON DUPLICATE KEY UPDATE unzer_id = VALUES(unzer_id),redirectUrl = VALUES(redirectUrl),amount = VALUES(amount),currency = VALUES(currency),returnUrl = VALUES(returnUrl),shopName = VALUES(shopName),shopDescription = VALUES(shopDescription),tagline = VALUES(tagline),action = VALUES(action),
+                        $qForInsertOrder = mysqli_query($conn, "INSERT INTO orders (unzer_id, redirectUrl, amount, amountUpdated, currency, returnUrl, shopName, shopDescription, tagline, action, paymentId, orderId, invoiceId, customerId, basketId, failureURL) VALUES ('{$data['unzer_id']}', '{$data['redirectUrl']}', '{$data['amount']}', '{$data['amount']}', '{$data['currency']}', '{$data['returnUrl']}', '{$data['shopName']}', '{$data['shopDescription']}', '{$data['tagline']}', '{$data['action']}', '{$data['paymentId']}', '{$orderId}', '{$data['invoiceId']}', '{$data['customerId']}', '{$data['basketId']}', '{$cancelUrl}')
+                        ON DUPLICATE KEY UPDATE unzer_id = VALUES(unzer_id),redirectUrl = VALUES(redirectUrl),amount = VALUES(amount),amountUpdated = VALUES(amount),currency = VALUES(currency),returnUrl = VALUES(returnUrl),shopName = VALUES(shopName),shopDescription = VALUES(shopDescription),tagline = VALUES(tagline),action = VALUES(action),
                         paymentId = VALUES(paymentId),invoiceId = VALUES(invoiceId),customerId = VALUES(customerId),basketId = VALUES(basketId),failureURL = VALUES(failureURL),updated_at = CURRENT_TIMESTAMP");
                         
                         $returnURL = $response->getRedirectUrl()."?locale=$storeLang";

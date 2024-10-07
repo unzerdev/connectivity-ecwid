@@ -5,6 +5,19 @@ include('includes/EcwidFunctions.php');
 include("vendor/autoload.php");
 use UnzerSDK\Unzer;
 
+function getStoreProfile($storeId, $storeToken){
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://app.ecwid.com/api/v3/$storeId/profile");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    $headers = array(
+        "Authorization: Bearer $storeToken"
+    );
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($response, TRUE);
+}
+
 $ecwidFunction = new EcwidFunctions();
 $ecwidPayload  = $_GET['payload'];
 $ecwidResponse = $ecwidFunction->getEcwidPayload(ECWID_SECRET_KEY,$ecwidPayload);
@@ -31,7 +44,10 @@ $dAutoCaptureStatus = "";
 
 if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
     $eStorId = $ecwidResponse['store_id'];
-    $qForGetStoreDetails = mysqli_query($conn, "SELECT u_publicKey,u_privateKey,u_authStatus,u_captureStatus,u_chargeStatus,u_autocapture  FROM configurations WHERE e_storeId = '".$eStorId."'");
+    $eStoreName = $eStorId;
+   
+    
+    $qForGetStoreDetails = mysqli_query($conn, "SELECT u_publicKey,u_privateKey,u_authStatus,u_captureStatus,u_chargeStatus,u_autocapture,e_storeName FROM configurations WHERE e_storeId = '".$eStorId."'");
     $countNumOfStore = mysqli_num_rows($qForGetStoreDetails);
     if($countNumOfStore > 0){
         $rForGetStoreDetails = mysqli_fetch_assoc($qForGetStoreDetails);
@@ -41,7 +57,15 @@ if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
         $dCaptureStatus = $rForGetStoreDetails['u_captureStatus'];
         $dAutoCaptureStatus = $rForGetStoreDetails['u_autocapture'];
         $dChargedStatus = $rForGetStoreDetails['u_chargeStatus'];
-		
+        
+        if(empty($rForGetStoreDetails['e_storeName'])){
+            $getEcwidStoreDetails = getStoreProfile($eStorId, $ecwidToken);
+            if(isset($getEcwidStoreDetails) && !empty($getEcwidStoreDetails['settings']) && !empty($getEcwidStoreDetails['settings']['storeName'])){
+                $eStoreName = $getEcwidStoreDetails['settings']['storeName'];
+                mysqli_query($conn, "UPDATE configurations SET e_storeName='".$eStoreName."' WHERE e_storeId='".$eStorId."'");
+            }
+        }
+        
 		$qForCheckWebhookExists = mysqli_query($conn, "SELECT * FROM configurations WHERE e_storeId = '".$eStorId."' and u_webhookId IS NULL");
 		$countWebhook = mysqli_num_rows($qForCheckWebhookExists);
 		if($countWebhook > 0 && $dPublicKey != "" && $dPrivateKey != ""){

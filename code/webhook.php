@@ -75,13 +75,14 @@
                     $qForUpdateOrderAmount = mysqli_query($conn, 'UPDATE orders SET amountUpdated = "'.$ecwidOrderTotal.'" WHERE shopName = "'.$wbStoreId.'" AND orderId = "'.$ecwidInternalOrderId.'"');
                     
                     if($ecwidInternalOrderId != ""){
-                        $qForGetOrderDetails = mysqli_query($conn,'select orderId,paymentId,shopName,action,paymentMethodName,shopName,amount,currency,returnUrl from orders where shopName="'.$wbStoreId.'" AND orderId="'.$ecwidInternalOrderId.'"');
+                        $qForGetOrderDetails = mysqli_query($conn,'select orderId,paymentId,shopName,action,paymentMethodName,amount,amountUpdated,currency,returnUrl from orders where shopName="'.$wbStoreId.'" AND orderId="'.$ecwidInternalOrderId.'"');
                         $countOrderDetails = mysqli_num_rows($qForGetOrderDetails);
                         if($countOrderDetails  > 0){
                             $rForGetOrderDetails = mysqli_fetch_assoc($qForGetOrderDetails);
                             $unzerPaymentId = $rForGetOrderDetails['paymentId'];
                             $unzerAction = $rForGetOrderDetails['action'];
                             $unzerAmount = $rForGetOrderDetails['amount'];
+                            $unzerAmountUpdated = $rForGetOrderDetails['amountUpdated'];
                             $unzerReturnURL = $rForGetOrderDetails['returnUrl'];
                             $unzerCurrency = $rForGetOrderDetails['currency'];
                             
@@ -89,7 +90,7 @@
                                 $unzer = new Unzer($u_privateKey);
                                 
                                 if($wbPaymentStatus == "PAID"){
-                                        if($unzerAction === "charge" || $unzerAction == "charge"){
+                                        if(($unzerAction === "charge" || $unzerAction == "charge")){
                                             $getPaymentDetail = $unzer->fetchPayment($unzerPaymentId);
                                             if(($getPaymentDetail->getPaymentType()->getId()) && $getPaymentDetail->getPaymentType()->getId() != ""){
                                             	$paymentTypeId = $getPaymentDetail->getPaymentType()->getId();
@@ -102,13 +103,13 @@
                                             }
                                         }
                                         
-                                        if($unzerAction === "authorize" || $unzerAction == "authorize"){
-                                            $authorize = $unzer->performChargeOnPayment($unzerPaymentId, new Charge());
-                                        	$qForGetOrderDetails = mysqli_query($conn,"INSERT INTO ecwid_webhook (ecwid_store_id, ecwid_order_id, unzer_action, unzer_payment_id, ecwid_payment_status, unzer_api_execute_id) VALUES ('".$wbStoreId."', '".$wbOrderId."', '".$unzerAction."', '".$unzerPaymentId."', '".$wbPaymentStatus."', '".$authorize->getId()."') ON DUPLICATE KEY UPDATE ecwid_store_id = '".$wbStoreId."', ecwid_order_id = '".$wbOrderId."', unzer_action = '".$unzerAction."',  unzer_payment_id = '".$unzerPaymentId."', ecwid_payment_status = '".$wbPaymentStatus."', unzer_api_execute_id = '".$authorize->getId()."'");
-                                            $paidStatus = array("PAID_UNZER_RESPONSE" => $authorize, "charge_id"=>$authorize->getId(), "action"=>$unzerAction, "date"=>$crDate);
+                                        if(($unzerAction === "authorize" || $unzerAction == "authorize")){
+                                            $fetchAutorization = $unzer->fetchAuthorization($unzerPaymentId);
+                                            $postCharge = $fetchAutorization->charge($unzerAmountUpdated);
+                                        	$qForGetOrderDetails = mysqli_query($conn,"INSERT INTO ecwid_webhook (ecwid_store_id, ecwid_order_id, unzer_action, unzer_payment_id, ecwid_payment_status, unzer_api_execute_id) VALUES ('".$wbStoreId."', '".$wbOrderId."', '".$unzerAction."', '".$unzerPaymentId."', '".$wbPaymentStatus."', '".$postCharge->getId()."') ON DUPLICATE KEY UPDATE ecwid_store_id = '".$wbStoreId."', ecwid_order_id = '".$wbOrderId."', unzer_action = '".$unzerAction."',  unzer_payment_id = '".$unzerPaymentId."', ecwid_payment_status = '".$wbPaymentStatus."', unzer_api_execute_id = '".$postCharge->getId()."'");
+                                            $paidStatus = array("amount" => $unzerAmountUpdated, "charge_id"=>$postCharge->getId(), "action"=>$unzerAction, "date"=>$crDate);
                                             $paidStatusJson = json_encode($paidStatus);
                                             file_put_contents('logs/ecwid_webhook/PAID_AUTHORIZED_STATUS_'.date("Y-m-d").'.log', $paidStatusJson, FILE_APPEND);
-                                           
                                         }
                                 }
                                 
