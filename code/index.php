@@ -5,19 +5,6 @@ include('includes/EcwidFunctions.php');
 include("vendor/autoload.php");
 use UnzerSDK\Unzer;
 
-function getStoreProfile($storeId, $storeToken){
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://app.ecwid.com/api/v3/$storeId/profile");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    $headers = array(
-        "Authorization: Bearer $storeToken"
-    );
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    $response = curl_exec($ch);
-    curl_close($ch);
-    return json_decode($response, TRUE);
-}
-
 $ecwidFunction = new EcwidFunctions();
 $ecwidPayload  = $_GET['payload'];
 $ecwidResponse = $ecwidFunction->getEcwidPayload(ECWID_SECRET_KEY,$ecwidPayload);
@@ -125,7 +112,7 @@ $countWebhook = mysqli_num_rows($qForGetWebhooks);
 							<div class="payment-method" id="payment-method-dashboard">
 								<div class="payment-method__header">
 									<div class="payment-method__logo">
-										<img src="<?php echo UNZER_ASSETS_URL; ?>/images/unzer-logo.png" width="336" height="144" alt="">
+										<img src="<?php echo UNZER_ASSETS_URL; ?>/images/unzer-logo.png" width="336" height="50" alt="" style="height:50px !important;">
 									</div>
 								</div>
 								<div class="payment-method__title">Accept Payments. Effortlessly and Anywhere</div>

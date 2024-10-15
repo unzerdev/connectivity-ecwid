@@ -72,11 +72,13 @@
                     $ecwidPaymentStatus = $getEcwidOrderDetails->paymentStatus;
                     $ecwidOrderTotal = $getEcwidOrderDetails->total;
                     
-                    $qForUpdateOrderAmount = mysqli_query($conn, 'UPDATE orders SET amountUpdated = "'.$ecwidOrderTotal.'" WHERE shopName = "'.$wbStoreId.'" AND orderId = "'.$ecwidInternalOrderId.'"');
+                    $qForUpdateOrderAmount = mysqli_query($conn, 'UPDATE orders SET amountUpdated = "'.$ecwidOrderTotal.'" WHERE shopDescription = "'.$wbStoreId.'" AND orderId = "'.$ecwidInternalOrderId.'"');
                     
                     if($ecwidInternalOrderId != ""){
-                        $qForGetOrderDetails = mysqli_query($conn,'select orderId,paymentId,shopName,action,paymentMethodName,amount,amountUpdated,currency,returnUrl from orders where shopName="'.$wbStoreId.'" AND orderId="'.$ecwidInternalOrderId.'"');
+                        
+                        $qForGetOrderDetails = mysqli_query($conn,'select orderId,paymentId,shopDescription,action,paymentMethodName,amount,amountUpdated,currency,returnUrl from orders where shopDescription="'.$wbStoreId.'" AND orderId="'.$ecwidInternalOrderId.'"');
                         $countOrderDetails = mysqli_num_rows($qForGetOrderDetails);
+                        
                         if($countOrderDetails  > 0){
                             $rForGetOrderDetails = mysqli_fetch_assoc($qForGetOrderDetails);
                             $unzerPaymentId = $rForGetOrderDetails['paymentId'];
@@ -85,7 +87,7 @@
                             $unzerAmountUpdated = $rForGetOrderDetails['amountUpdated'];
                             $unzerReturnURL = $rForGetOrderDetails['returnUrl'];
                             $unzerCurrency = $rForGetOrderDetails['currency'];
-                            
+                        
                             if($unzerPaymentId != "" && $u_publicKey != "" && $u_privateKey != "" && $wbStoreId != "" && $ecwidPaymentStatus != ""){
                                 $unzer = new Unzer($u_privateKey);
                                 

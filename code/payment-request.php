@@ -10,6 +10,7 @@
     use UnzerSDK\Resources\EmbeddedResources\BasketItem;
     use UnzerSDK\Constants\BasketItemTypes;
     use UnzerSDK\Resources\PaymentTypes\Paypage;
+    use UnzerSDK\Resources\Metadata;
 
 	function getEcwidPayload($app_secret_key, $data) {
 		$encryption_key = substr($app_secret_key, 0, 16);
@@ -25,15 +26,28 @@
 		$json = openssl_decrypt($payload, "aes-128-cbc", $key, OPENSSL_RAW_DATA, $iv);
 		return $json;
 	}
+	
+	function getStoreProfile($storeId, $storeToken){
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://app.ecwid.com/api/v3/$storeId/profile");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $headers = array(
+            "Authorization: Bearer $storeToken"
+        );
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($response, TRUE);
+    }
 
 	$ecwid_payload = $_POST['data'];
 	$client_secret = "oizuHCVj9GJlz9CHdeZvVPrd77YIKl0O"; 
 	$result = getEcwidPayload($client_secret, $ecwid_payload);
-	
+
 	$payloadArray = array("response"=> $result, "date" => date("Y-m-d H:i:s"));
     $payloadArrayJson = json_encode($payloadArray);
     file_put_contents('logs/ecwid_webhook/payment_request_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
-	
+    
     if(isset($result) && !empty($result)){
         $orderTotalWithoutTax = 0;
         $myStoreId = $result['storeId'];
@@ -78,7 +92,14 @@
             $u_chargeStatus = $rForStoreDetails['u_chargeStatus'];
             $u_autocapture = $rForStoreDetails['u_autocapture'];
             
+            $getEcwidStoreDetails = getStoreProfile($eStoreId, $eStoreToken);
+            if(isset($getEcwidStoreDetails) && !empty($getEcwidStoreDetails['settings']) && !empty($getEcwidStoreDetails['settings']['storeName'])){
+                $eStoreName = $getEcwidStoreDetails['settings']['storeName'];
+                mysqli_query($conn, "UPDATE configurations SET e_storeName='".$eStoreName."' WHERE e_storeId='".$eStoreId."'");
+            }
+         
             $unzer = new Unzer($u_privateKey);
+            
             
             //SHIPMENT DETAILS
             $shippingRate = 0;
@@ -102,6 +123,13 @@
             $bCity = ($billingAddress['city']) ? $billingAddress['city'] : 'N/A';
             $bCCode = ($billingAddress['countryCode']) ? $billingAddress['countryCode'] : 'N/A';
             $bPhone = ($billingAddress['phone']) ? $billingAddress['phone'] : 'N/A';
+            
+            $metadata = new Metadata();
+            $metadata->addMetadata('shop_type', 'Ecwid')
+                     ->addMetadata('shop_version', '5.7.7')
+                     ->addMetadata('plugin_version', '1.0.0')
+                     ->addMetadata('plugin_type', 'unzerdev/ecwid');
+            $metadataResponse = $unzer->createMetadata($metadata);
             
             $address = (new Address())
                 ->setName($bName)
@@ -138,17 +166,23 @@
                 $basketSetTitle = $items['name'];
                 $basketSubTitle = $items['shortDescription'];
                 $basketSetImageUrl = $items['smallThumbnailUrl'];
-
+                $basketVATperProd = 0;
+                if(isset($items['taxes']) && !empty($items['taxes'][0])){
+                      $basketVATperProd = $items['taxes'][0]['value'];
+                }
+                
                 $item = (new BasketItem())
                     ->setBasketItemReferenceId($basketRefId)
                     ->setQuantity($basketQty)
                     ->setAmountPerUnitGross($basketUnitGross)
                     ->setAmountDiscountPerUnitGross($basketDiscountPerUnitGross)
-                    ->setVat(0)
                     ->setTitle($basketSetTitle)
                     ->setSubTitle($basketSubTitle)
                     ->setImageUrl($basketSetImageUrl)
                     ->setType(BasketItemTypes::GOODS);
+                    if($basketVATperProd > 0){
+                        $item->setVat($basketVATperProd);
+                    }
                 $basket->addBasketItem($item);
             }
             
@@ -173,7 +207,7 @@
             }
             
             $createBasketBox =  $unzer->createBasket($basket);
-            
+
             $paypage = new Paypage($orderTotal, $orderCurrency, $successURL);
 
             $paypage->setLogoImage('')
@@ -183,16 +217,16 @@
                 ->setExemptionType(\UnzerSDK\Constants\ExemptionType::LOW_VALUE_PAYMENT)
                 ->setEffectiveInterestRate(0);
                 
-            $paypage->setAdditionalAttribute('disabledCOF', 'card'); 
+            $paypage->setAdditionalAttribute('disabledCOF', 'card,paypal,sepa-direct-debit'); 
         
             try {
                 
                 if($u_autocapture === "AUTHORIZE" || $u_autocapture == "AUTHORIZE"){
-                    $response = $unzer->initPayPageAuthorize($paypage, $customer, $basket);
+                    $response = $unzer->initPayPageAuthorize($paypage, $customer, $basket, $metadata);
                 }else{
-                    $response = $unzer->initPayPageCharge($paypage, $customer, $basket);
+                    $response = $unzer->initPayPageCharge($paypage, $customer, $basket, $metadata);
                 }
-               
+                
                 $unzerLogArray = array("ecwid_store"=> $myStoreId, "ecwid_order_id"=> $orderId, "date" => date("Y-m-d H:i:s"));
                 $unzerLogArrayJson = json_encode($unzerLogArray);
                 file_put_contents('logs/unzer_response_'.date("Y-m-d").'.log', $unzerLogArrayJson, FILE_APPEND);
@@ -206,7 +240,7 @@
                             'currency' => $response->getCurrency(),
                             'returnUrl' => $response->getReturnUrl(),
                             'shopName' => $response->getShopName(),
-                            'shopDescription' => $response->getShopDescription(),
+                            'shopDescription' => $eStoreId,
                             'tagline' => $response->getTagline(),
                             'action' => $response->getAction(),
                             'paymentId' => $response->getPaymentId(),

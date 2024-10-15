@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 03, 2024 at 08:34 AM
+-- Generation Time: Oct 15, 2024 at 06:45 AM
 -- Server version: 10.4.24-MariaDB
 -- PHP Version: 8.1.6
 
@@ -30,6 +30,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `configurations` (
   `id` int(11) NOT NULL,
   `e_storeId` varchar(255) NOT NULL,
+  `e_storeName` text DEFAULT NULL,
   `e_accessToken` text NOT NULL,
   `u_publicKey` text DEFAULT NULL,
   `u_privateKey` text DEFAULT NULL,
@@ -71,7 +72,7 @@ CREATE TABLE `orders` (
   `paymentMethodName` text DEFAULT NULL,
   `redirectUrl` text DEFAULT NULL,
   `amount` decimal(10,2) DEFAULT NULL,
-  `amountUpdated` decimal(10,0) DEFAULT 0,
+  `amountUpdated` decimal(10,2) DEFAULT 0.00,
   `currency` varchar(10) DEFAULT NULL,
   `returnUrl` text DEFAULT NULL,
   `shopName` text DEFAULT NULL,

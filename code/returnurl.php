@@ -32,8 +32,9 @@
         $cPaymentId = $explodeOrderIds[1];
         $crPaymentMethodName = "Unzer Payment";
         
-        $qForGetOrderDetails = mysqli_query($conn, "SELECT *  FROM orders WHERE orderId='".$cPaymentId."' AND shopName='".$cStoreId."'");
+        $qForGetOrderDetails = mysqli_query($conn, "SELECT *  FROM orders WHERE orderId='".$cPaymentId."' AND shopDescription='".$cStoreId."'");
         $rForGetOrderDetails = mysqli_fetch_assoc($qForGetOrderDetails);
+        
         $u_action = $rForGetOrderDetails['action'];
         $u_cancelURL = $rForGetOrderDetails['failureURL'];
         
@@ -77,7 +78,7 @@
         }
         curl_close($ch);
         
-        $qForUpdateOrder = mysqli_query($conn, "UPDATE orders SET paymentMethodName = '".$crPaymentMethodName."',updated_at = CURRENT_TIMESTAMP WHERE orderId = '".$cPaymentId."' AND shopName = '".$cStoreId."'");
+        $qForUpdateOrder = mysqli_query($conn, "UPDATE orders SET paymentMethodName = '".$crPaymentMethodName."',updated_at = CURRENT_TIMESTAMP WHERE orderId = '".$cPaymentId."' AND shopDescription = '".$cStoreId."'");
         
         if($u_action === "authorize" || $u_action == "authorize"){
             if ($payment->getState() === 1 || $payment->getState() == "1") {

@@ -56,7 +56,7 @@ if(isset($webhookData) && !empty($webhookData)){
             $qForGetWebhook =  mysqli_query($conn,"SELECT * FROM webhook_urls WHERE store_id='".$ecwidStoreId."'");
             $countWebhook = mysqli_num_rows($qForGetWebhook);
             if($countWebhook > 0){
-                $qForGetOrderDetails = mysqli_query($conn,"SELECT orderId FROM orders WHERE paymentId='".$webhookPaymentId."' AND shopName='".$ecwidStoreId."'");
+                $qForGetOrderDetails = mysqli_query($conn,"SELECT orderId FROM orders WHERE paymentId='".$webhookPaymentId."' AND shopDescription='".$ecwidStoreId."'");
                 $rForGetOrderDetails= mysqli_fetch_assoc($qForGetOrderDetails);
                 $ecwidOrderId = $rForGetOrderDetails['orderId'];
                 
