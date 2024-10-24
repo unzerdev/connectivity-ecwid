@@ -47,6 +47,65 @@
     }
     
     if(isset($wbEventType)){ 
+        
+       /* if($wbEventType == "order.created"){
+                $qForGetStoreDetails = mysqli_query($conn,'select e_accessToken,u_privateKey,u_autocapture from configurations WHERE e_storeId="'.$wbStoreId.'" ORDER BY id desc LIMIT 1');
+                $countStore = mysqli_num_rows($qForGetStoreDetails);
+                if($countStore > 0){
+                    $rForGetStoreDetails = mysqli_fetch_assoc($qForGetStoreDetails); 
+                    $ecwidSecretToken = $rForGetStoreDetails['e_accessToken'];
+                    $unzerPrivateKey = $rForGetStoreDetails['u_privateKey'];
+                    $getEcwidOrderDetails = getOrderDetailsEcwid($wbStoreId, $wbOrderId, $ecwidSecretToken);
+                    if(isset($getEcwidOrderDetails) && !empty($getEcwidOrderDetails->internalId)){
+                        $ecwidInternalOrderId = $getEcwidOrderDetails->internalId;
+                        $qForGetOrderDetails = mysqli_query($conn,'select * from orders WHERE shopDescription="'.$wbStoreId.'" AND orderId = "'.$ecwidInternalOrderId.'" AND action = "charge" AND paymentMethodName = "Prepayment" ORDER BY id desc LIMIT 1');
+                        $countTotalOrder = mysqli_num_rows($qForGetOrderDetails);
+                        if($countTotalOrder > 0){
+                            $rForGetOrderDetails = mysqli_fetch_assoc($qForGetOrderDetails);
+                            $unzerPaymentId = $rForGetOrderDetails['paymentId'];
+                            
+                            $chargePrePaymentAPIURl = "https://api.unzer.com/v1/payments/".$unzerPaymentId."/charges/s-chg-1";
+                            $ch = curl_init();
+                            curl_setopt($ch, CURLOPT_URL, $chargePrePaymentAPIURl);
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                                "Authorization: Basic " . base64_encode($unzerPrivateKey . ":"),
+                                "Content-Type: application/json"
+                            ]);
+                            $cpResponse = curl_exec($ch);
+                        
+                            if(isset($cpResponse) && !empty($cpResponse)){
+                                $cpResponse = json_decode($cpResponse, true);
+                                if(isset($cpResponse) && isset($cpResponse['processing']) && !empty($cpResponse['processing'])){
+                                        $chargeResponse = $cpResponse['processing'];
+                                        $chargeHolder = $chargeResponse['holder'];
+                                        $chargeIBAN = $chargeResponse['iban'];
+                                        $chargeBIC = $chargeResponse['bic'];
+                                        $chargeDescriptor = $chargeResponse['descriptor'];
+                                        $cpValue = "Holder:".$chargeHolder.", IBAN:".$chargeIBAN.", BIC:".$chargeBIC.", Descriptor: ".$chargeDescriptor;
+                                        $prepaymentCustomField = array(
+                                            'id' => 'prepaymentField',
+                                            'title' => 'Please transfer the amount to the following account',
+                                            'value' => $cpValue,
+                                            'customerInputType' => 'TEXT', 
+                                            'orderDetailsDisplaySection' => 'order_comments',
+                                            "showInNotifications" => true,
+                                            "showInInvoice"=> true
+                                        );
+                                        $prepaymentArray = array('orderExtraFields' => array($prepaymentCustomField));
+                                        $d = updateOrder($wbStoreId, $ecwidInternalOrderId, $ecwidSecretToken, 'PUT', $prepaymentArray);
+                                        
+                                        $paymentArray = array("store_id" => $wbStoreId,"cpValue" => $cpValue, "prepayment_response" => $cpResponse['processing'], "date" => date('Y-m-d h:i:s'), 'd'=>  $d);
+                                        $paymentArrayJson = json_encode($paymentArray);
+                                        file_put_contents('logs/unzer_pre_payment_response_'.date("Y-m-d").'.log', $paymentArrayJson, FILE_APPEND);
+                                }
+                            }
+                        }
+                        
+                    }
+                }
+        }*/
+        
         if($wbEventType == "order.updated"){
                 $crDate = date("Y-m-d h:i:s");
                 $webhookResponseLog = array("webhook" => $wehookResponseJsonData);
@@ -156,6 +215,29 @@
                                     }
                                 }
                             }
+                            
+                            $ch = curl_init();
+                            curl_setopt($ch, CURLOPT_URL, "https://api.unzer.com/v1/payments/{$unzerPaymentId}");
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                                'Authorization: Basic ' . base64_encode($u_privateKey.':'),
+                            ]);
+                            $responseOfUnzerPayment = curl_exec($ch);
+                            $responseOfUnzerPayment = json_decode($responseOfUnzerPayment , TRUE);
+                            $rUnzerStateName = $responseOfUnzerPayment['state']['name'];
+            
+                            $ecwidOrderExtraFields = array(
+                                'id' => 'UnzerPaymentState',
+                                'title' => 'Unzer Payment State',
+                                'value' => ucfirst($rUnzerStateName),
+                                'customerInputType' => 'TEXT', 
+                                'orderDetailsDisplaySection' => 'billing_info',
+                                "showInNotifications" => false,
+                                "showInInvoice"=> false
+                            );
+
+                            $updateExtraFields = array('orderExtraFields' => array($ecwidOrderExtraFields));
+                            updateOrder($wbStoreId, $wbOrderId, $ecSecretToken, 'PUT', $updateExtraFields);
                         }
                     }
                 }
