@@ -5,9 +5,9 @@
     header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 	$host = 'localhost';
-	$username = 'mavenhostingserv_nirvir';
-	$password = '9M@st#;2qy,4';
-	$database = 'mavenhostingserv_unzerecwid';
+	$username = 'nirvir_unzer';
+	$password = 'HEXvu9JTq[fF';
+	$database = 'nirvir_unzerecwid';
 
 	global $conn;
 	$conn = mysqli_connect($host,$username,$password,$database);
