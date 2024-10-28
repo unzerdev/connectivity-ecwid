@@ -31,12 +31,11 @@ $webhookData = json_decode($input, true);
 $cDate = date('Y-m-d H:i:s');
 $uPaymentStatus = "";
 
+$payloadArray = array("webhook_date"=> $webhookData,"Webhook_event" =>$webhookData['event'],  "date" => date("Y-m-d H:i:s"));
+$payloadArrayJson = json_encode($payloadArray);
+file_put_contents('logs/unzer_webhook/uWebhook_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
+
 if(isset($webhookData) && !empty($webhookData)){
-    
-    $payloadArray = array("webhook_date"=> $webhookData,"Webhook_event" =>$webhookData['event'],  "date" => date("Y-m-d H:i:s"));
-    $payloadArrayJson = json_encode($payloadArray);
-    file_put_contents('logs/unzer_webhook/uWebhook_'.date("Y-m-d").'.log', $payloadArrayJson, FILE_APPEND);
-    
     if(isset($webhookData['event']) && !empty($webhookData['event']) && isset($webhookData['publicKey']) && !empty($webhookData['publicKey']) && isset($webhookData['retrieveUrl']) && !empty($webhookData['retrieveUrl']) && isset($webhookData['paymentId']) && !empty($webhookData['paymentId'])){
         $webhookEvent = $webhookData['event'];
         $webhookPublicKey = $webhookData['publicKey'];

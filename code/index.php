@@ -58,7 +58,7 @@ if(isset($ecwidResponse['store_id']) && !empty($ecwidResponse['store_id'])){
 		if($countWebhook > 0 && $dPublicKey != "" && $dPrivateKey != ""){
 			$unzer = new UnzerSDK\Unzer($dPrivateKey);
 			$existingWebhooks = $unzer->fetchAllWebhooks();
-			$webhookUrl = 'https://unzerecwid.mavenhostingservice.com/unzer_webhook_handler.php';
+			$webhookUrl = 'https://portfolio.maven-infotech.com/ecwid_apps/unzerecwid/unzer_webhook_handler.php';
             $webhookEvent = UnzerSDK\Constants\WebhookEvents::ALL;
 			
 			$isWebhookRegistered = false;
@@ -259,7 +259,7 @@ $countWebhook = mysqli_num_rows($qForGetWebhooks);
 														
 														<input type="hidden" name="action" id="action" value="register">
 														<input type="hidden" name="storeId" id="storeId" value="<?php echo $ecwidStoreId; ?>">
-														<input type="hidden" name="webhookUrl" id="webhookUrl" value="https://mavenhostingservice.com/unzerecwid/unzer_webhook_handler.php">
+														<input type="hidden" name="webhookUrl" id="webhookUrl" value="https://portfolio.maven-infotech.com/ecwid_apps/unzerecwid/unzer_webhook_handler.php">
 														<input type="hidden" name="storeAccessToken" id="storeAccessToken" value="<?php echo $ecwidToken; ?>">
 														<button type="submit" class="btn btn-default btn-medium config-submit-button">Submit</button> <img src="<?php echo UNZER_ASSETS_URL; ?>/images/loader.gif" id="loader" class="loader" alt="loader"/>
                                                         

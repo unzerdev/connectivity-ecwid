@@ -70,7 +70,7 @@
         $billingAddress = $result['cart']['order']['billingPerson'];
         $ecwidSecretToken = $result['token'];
         $cancelUrl  = $result['returnUrl'];
-        $successURL = "https://unzerecwid.mavenhostingservice.com/returnurl.php?order=$orderRandNumber";
+        $successURL = "https://portfolio.maven-infotech.com/ecwid_apps/unzerecwid/returnurl.php?order=$orderRandNumber";
         $orderTotal = str_replace(",", "",$orderTotal);
         $orderTotalWithoutTax = str_replace(",", "",$orderTotalWithoutTax);
         $orderTotalTax = str_replace(",", "",$orderTotalTax);
